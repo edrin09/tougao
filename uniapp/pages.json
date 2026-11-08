@@ -1,0 +1,139 @@
+{
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "自助投稿",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/preview/preview",
+			"style": {
+				"navigationBarTitleText": "投稿预览",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/personal/personal",
+			"style": {
+				"navigationBarTitleText": "个人中心",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/submission-list/submission-list",
+			"style": {
+				"navigationBarTitleText": "投稿列表",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/my-posts/my-posts",
+			"style": {
+				"navigationBarTitleText": "我的投稿",
+				"navigationStyle": "custom",
+				"enablePullDownRefresh": true
+			}
+		},
+		{
+			"path": "pages/setting/setting",
+			"style": {
+				"navigationBarTitleText": "墙主设置",
+				"navigationStyle": "custom"
+			}
+		},
+		// {
+		// 	"path": "pages/comment/comment",
+		// 	"style": {
+		// 		"navigationBarTitleText": "评论区",
+		// 		"navigationStyle": "custom",
+		// 		"enablePullDownRefresh": true
+		// 	}
+		// },
+		{
+			"path": "pages/group-settings/group-settings",
+			"style": {
+				"navigationBarTitleText": "群聊设置",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/user-guide/user-guide",
+			"style": {
+				"navigationBarTitleText": "使用教程",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/privacy-policy/privacy-policy",
+			"style": {
+				"navigationBarTitleText": "隐私政策",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/user-profile/user-profile",
+			"style": {
+				"navigationBarTitleText": "",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path" : "pages/user-agreemen/user-agreemen",
+			"style" : 
+			{
+				"navigationBarTitleText" : "",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path" : "pages/withdraw-history/withdraw-history",
+			"style" : 
+			{
+				"navigationBarTitleText" : "",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path" : "pages/commission-detail/commission-detail",
+			"style" : 
+			{
+				"navigationBarTitleText" : "",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path" : "pages/withdraw/withdraw",
+			"style" : 
+			{
+				"navigationBarTitleText" : "",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path" : "pages/my-posts/detail",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/login/index",
+			"style" :
+			{
+				"navigationBarTitleText" : "",
+				"navigationStyle": "custom"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "uni-app",
+		"navigationBarBackgroundColor": "#F8F8F8",
+		"backgroundColor": "#F8F8F8",
+		"app-plus": {
+			"background": "#efeff4"
+		}
+	}
+}

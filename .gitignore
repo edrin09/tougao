@@ -1,0 +1,32 @@
+# ---- 依赖与构建产物：不入库 ----
+node_modules/
+dist/
+unpackage/
+/uniapp/unpackage
+/admin/dist
+
+# ---- 运行时 ----
+/api/runtime
+runtime/
+*.log
+
+# ---- 上传与生成产物 ----
+/api/public/uploads
+/api/public/poster
+/api/public/avatar
+
+# ---- 凭据：绝不入库 ----
+/api/config/database.php
+/api/config/wechat.php
+/api/config/cert/
+*apiclient_key.pem
+*apiclient_cert.pem
+.env
+!.env.example
+
+# ---- 编辑器 / 系统 ----
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+__pycache__/

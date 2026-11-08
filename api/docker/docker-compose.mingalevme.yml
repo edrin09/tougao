@@ -1,0 +1,7 @@
+services:
+  mingalevme:
+    image: mingalevme/screenshoter:latest
+    container_name: mingalevme
+    privileged: true
+    ports:
+      - "8080:8080"   # 将容器内的服务端口暴露到宿主机

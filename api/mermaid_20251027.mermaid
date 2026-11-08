@@ -1,0 +1,51 @@
+graph TD
+    Start(开始) --> User
+
+    subgraph 用户端小程序
+        User[用户] --> Login[登录/设置个人信息]
+        Login --> step1[投稿: 获取绑定墙/选择其他墙]
+        step1 --> step3[投稿: 选择渠道/支付]
+        step3 --> Violation{后台是否自动过违禁词?}
+
+        Violation -->|是| 敏感词自动过滤[自动过滤违禁词] --> NotifyWallMaster{投稿完成}
+        Violation -->|否| 敏感词不自动过滤[不自动过滤违禁词] --> NotifyWallMaster{投稿完成}
+
+        NotifyWallMaster --> WallMasterReview[墙主审核]
+        WallMasterReview --> Approve{审核通过?}
+        Approve -->|是| Pass[审核通过] --> NotifyUser2[通知用户审核通过]
+        Approve -->|否| Reject[审核驳回] --> Refund[原路退款] --> NotifyUser3[通知用户审核驳回]
+    end
+
+    subgraph 墙主端小程序
+        WallMasterLogin[墙主登录] --> WallMasterDashboard[墙主个人中心]
+        WallMasterDashboard --> CheckPending[查看待审核稿件]
+        CheckPending --> WallMasterReview
+        WallMasterDashboard --> ViewData[查看数据概览]
+        ViewData --> ApplyWithdraw[申请提现]
+        ApplyWithdraw --> WithdrawProcess[提现处理]
+    end
+
+    subgraph 总后台Web
+        AdminLogin[管理员登录] --> ManageWallMaster[管理墙主申请]
+        ManageWallMaster --> SetRatio[设置分成比例]
+        AdminLogin --> ManageForbidden[管理违禁词]
+        ManageForbidden --> SetAutoCheck[敏感词自动过滤]
+        AdminLogin --> ManageWithdraw[处理提现申请]
+        ManageWithdraw --> UploadVoucher[上传打款凭证]
+        AdminLogin --> ManageAgreement[用户协议]
+        ManageAgreement --> WallAgreement[墙主协议]
+        ManageAgreement --> UserAgreement[用户协议]
+        AdminLogin --> WallList[墙列表]
+        WallList --> ManageWall[墙下面人员列表]
+    end
+
+    NotifyWallMaster --> CheckPending
+    Pass --> AutoPublish[自动发布到渠道]
+    AutoPublish --> NotifyUser2
+
+    %% 优化点注释
+    note2[墙主关注微信公众号后发送模板消息, 未关注发送小程序消息: 墙主待审核通知] --> NotifyWallMaster
+    note3[用户投稿时默认使用绑定墙和默认联系方式, 未绑定墙时要求用户选择墙, 也可以选择其他墙] --> step1
+
+    style note2 fill:#lightyellow,stroke:#aaa,stroke-width:2px
+    style note3 fill:#lightyellow,stroke:#aaa,stroke-width:2px

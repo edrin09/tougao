@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>校园墙投稿系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.cn/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            lake: '#3B82F6',
+            indigo2: '#1E40AF',
+            emerald2: '#22C55E',
+            rose2: '#EF4444',
+            slate2: '#64748B',
+            cloud: '#F8FAFC',
+            warmApricot: '#FEF3C7',
+            palePink: '#FCE7F3',
+            lightCyan: '#CFFAFE',
+            lavender: '#EDE9FE',
+            mint: '#D1FAE5',
+            ivory: '#FFFBEB',
+          },
+          fontFamily: {
+            sans: ['Noto Sans SC', 'Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Noto Sans SC', 'Inter', sans-serif; margin: 0; background: #f0f2f5; }
+    .phone-frame { width: 375px; height: 750px; overflow: hidden; position: relative; }
+    .phone-content { height: calc(100% - 52px); overflow-y: auto; overflow-x: hidden; }
+    .phone-content::-webkit-scrollbar { width: 0; }
+    .tab-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 52px; }
+    .fade-in { animation: fadeIn 200ms ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .slide-in { animation: slideIn 200ms ease-out; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+    .btn-press:active { transform: scale(0.98); }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+    .pull-indicator { transition: transform 0.2s ease; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; display: flex; align-items: center; justify-content: center; }
+    .color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; transition: transform 0.15s; }
+    .color-dot:hover { transform: scale(1.15); }
+    .color-dot.selected { ring: 2px; box-shadow: 0 0 0 2px #3B82F6; }
+    .admin-sidebar-item { transition: all 0.15s; }
+    .admin-sidebar-item:hover { background: rgba(59,130,246,0.08); }
+    .admin-sidebar-item.active { background: rgba(59,130,246,0.12); color: #1E40AF; font-weight: 600; }
+    .refreshing .pull-indicator { transform: rotate(360deg); }
+    input, textarea, select { font-family: inherit; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+<!-- Top Toggle Bar -->
+<div class="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm h-14 flex items-center justify-between px-6">
+  <div class="flex items-center gap-2">
+    <div class="w-8 h-8 bg-lake rounded-lg flex items-center justify-center">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+    </div>
+    <span class="font-semibold text-gray-800 text-base">校园墙投稿系统</span>
+  </div>
+  <div class="flex bg-gray-100 rounded-lg p-1">
+    <button onclick="switchMode('mini')" id="btn-mini" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-lake text-white">小程序端</button>
+    <button onclick="switchMode('admin')" id="btn-admin" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all text-gray-600">后台管理端</button>
+  </div>
+</div>
+
+<!-- Mini Program Container -->
+<div id="mini-container" class="pt-14 flex justify-center items-start min-h-screen bg-gradient-to-b from-gray-200 to-gray-300" style="display:none;">
+  <div class="mt-6 mb-6 phone-frame bg-cloud rounded-[2rem] shadow-2xl border-[8px] border-gray-800 relative flex flex-col overflow-hidden">
+    <!-- Status Bar -->
+    <div class="h-6 bg-white flex items-center justify-between px-5 text-xs text-gray-500 flex-shrink-0">
+      <span>9:41</span>
+      <div class="flex gap-1 items-center">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21l-1.5-1.5C5.4 14.8 2 12 2 8.5 2 5.4 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2.1C13.1 3.8 14.8 3 16.5 3 19.6 3 22 5.4 22 8.5c0 3.5-3.4 6.3-8.5 11L12 21z"/></svg>
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.34C7 21.4 7.6 22 8.33 22h7.34c.73 0 1.33-.6 1.33-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+    <!-- Dynamic Content Area -->
+    <div id="mini-page" class="phone-content bg-cloud flex-1"></div>
+    <!-- Tab Bar -->
+    <div id="mini-tabbar" class="tab-bar bg-white border-t border-gray-100 flex items-center justify-around flex-shrink-0" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- Admin Container -->
+<div id="admin-container" class="pt-14 min-h-screen flex" style="display:none;">
+  <!-- Sidebar -->
+  <div class="w-60 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 h-[calc(100vh-3.5rem)] fixed left-0 top-14">
+    <div class="p-4 border-b border-gray-100">
+      <div class="text-sm font-semibold text-indigo2">校园墙管理后台</div>
+      <div class="text-xs text-slate2 mt-1">admin@campus.com</div>
+    </div>
+    <nav id="admin-sidebar" class="flex-1 overflow-y-auto py-2"></nav>
+    <div class="p-4 border-t border-gray-100">
+      <button onclick="adminLogout()" class="w-full text-sm text-slate2 hover:text-rose2 transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        退出登录
+      </button>
+    </div>
+  </div>
+  <!-- Content Area -->
+  <div class="ml-60 flex-1 p-6 min-h-[calc(100vh-3.5rem)]">
+    <div id="admin-page" class="fade-in"></div>
+  </div>
+</div>
+
+<!-- Modal Container -->
+<div id="modal-root"></div>
+
+<script>
+// ==================== DATA STORE ====================
+const CARD_COLORS = [
+  { name: '暖杏', value: '#FEF3C7' },
+  { name: '薄粉', value: '#FCE7F3' },
+  { name: '浅青', value: '#CFFAFE' },
+  { name: '薰衣草', value: '#EDE9FE' },
+  { name: '薄荷', value: '#D1FAE5' },
+  { name: '象牙白', value: '#FFFBEB' },
+];
+
+const CHANNELS = ['推荐', '表白', '求助', '二手', '活动'];
+
+const TAGS = ['匿名', '表白墙', '求助', '二手交易', '活动', '寻物', '招聘', '交友', '吐槽', '分享'];
+
+const store = {
+  mode: 'mini', // 'mini' | 'admin'
+  miniPage: 'login', // current mini program page
+  miniTab: 'home', // current tab: home, post, message, profile
+  adminPage: 'login', // current admin page
+  miniLoggedIn: false,
+  adminLoggedIn: false,
+  user: { nickname: '小明同学', avatar: '', role: 'wallOwner' }, // role: user | wallOwner
+  adminUser: { username: 'admin' },
+  currentChannel: '推荐',
+  newPost: { channel: '表白', content: '', images: [], tags: [], bgColor: '#FEF3C7' },
+  viewingPostId: null,
+  posts: [
+    { id: 1, channel: '表白', content: '图书馆三楼靠窗的女生，你认真看书的样子真好看，希望能认识你~', tags: ['匿名','表白墙'], bgColor: '#FCE7F3', likes: 128, comments: 23, status: 'approved', author: '小红', authorAvatar: '', createdAt: '2024-01-15 14:30' },
+    { id: 2, channel: '求助', content: '有没有同学捡到一张校园卡？姓名是张XX，工商银行的，捡到请联系138xxxx，必有重谢！', tags: ['求助','寻物'], bgColor: '#CFFAFE', likes: 45, comments: 12, status: 'approved', author: '急找人', authorAvatar: '', createdAt: '2024-01-15 12:15' },
+    { id: 3, channel: '二手', content: '出九成新iPad Air 5，256G wifi版，带笔和键盘，2800出，有意私聊', tags: ['二手交易'], bgColor: '#FEF3C7', likes: 67, comments: 34, status: 'approved', author: '毕业学长', authorAvatar: '', createdAt: '2024-01-14 20:45' },
+    { id: 4, channel: '活动', content: '本周六下午2点，学生会举办校园歌手大赛初赛，地点大礼堂，欢迎来围观！', tags: ['活动'], bgColor: '#D1FAE5', likes: 89, comments: 15, status: 'approved', author: '学生会', authorAvatar: '', createdAt: '2024-01-14 16:00' },
+    { id: 5, channel: '表白', content: '感谢食堂阿姨每次都多给我打一勺菜，您是校园里最可爱的人！', tags: ['表白墙','分享'], bgColor: '#EDE9FE', likes: 256, comments: 45, status: 'approved', author: '干饭人', authorAvatar: '', createdAt: '2024-01-13 11:30' },
+    { id: 6, channel: '求助', content: '高数期末挂了，有没有学长学姐能带带我补考复习？可以请吃饭！', tags: ['求助'], bgColor: '#FFFBEB', likes: 34, comments: 18, status: 'pending', author: '小菜鸡', authorAvatar: '', createdAt: '2024-01-15 16:20' },
+    { id: 7, channel: '表白', content: '室友每天早起给我带早餐，四年来从未间断，毕业前想对你说一声谢谢', tags: ['表白墙','匿名'], bgColor: '#FCE7F3', likes: 312, comments: 56, status: 'pending', author: '幸运儿', authorAvatar: '', createdAt: '2024-01-15 08:00' },
+  ],
+  myPosts: [
+    { id: 101, content: '考试加油！', channel: '活动', status: 'approved', bgColor: '#D1FAE5', createdAt: '2024-01-10' },
+    { id: 102, content: '寻人启事', channel: '求助', status: 'pending', bgColor: '#CFFAFE', createdAt: '2024-01-12' },
+    { id: 103, content: '转让自行车', channel: '二手', status: 'rejected', bgColor: '#FEF3C7', rejectReason: '信息不完整，请补充联系方式', createdAt: '2024-01-13' },
+  ],
+  myLikes: [1, 4, 5],
+  comments: [
+    { id: 1, postId: 1, author: '路人甲', content: '加油！冲冲冲', createdAt: '2024-01-15 15:00' },
+    { id: 2, postId: 1, author: '吃瓜群众', content: '这是哪个图书馆啊？', createdAt: '2024-01-15 15:30' },
+    { id: 3, postId: 1, author: '匿名', content: '我也看到过，确实好看', createdAt: '2024-01-15 16:00' },
+  ],
+  notifications: [
+    { id: 1, type: 'audit', title: '投稿审核通过', content: '你的投稿"考试加油！"已通过审核', read: false, postId: 101, createdAt: '2024-01-10 10:00' },
+    { id: 2, type: 'like', title: '收到点赞', content: '小红赞了你的投稿', read: false, postId: 101, createdAt: '2024-01-11 09:00' },
+    { id: 3, type: 'comment', title: '收到评论', content: '路人甲评论了你的投稿：加油！', read: true, postId: 101, createdAt: '2024-01-11 11:00' },
+    { id: 4, type: 'audit', title: '投稿被驳回', content: '你的投稿"转让自行车"被驳回，原因：信息不完整', read: false, postId: 103, createdAt: '2024-01-13 14:00' },
+    { id: 5, type: 'system', title: '系统通知', content: '校园墙新增"活动"频道，快来投稿吧！', read: true, createdAt: '2024-01-14 09:00' },
+  ],
+  commission: { total: 580, available: 320, withdrawn: 260 },
+  commissionRecords: [
+    { id: 1, type: 'income', amount: 50, desc: '审核投稿奖励', createdAt: '2024-01-15' },
+    { id: 2, type: 'income', amount: 30, desc: '审核投稿奖励', createdAt: '2024-01-14' },
+    { id: 3, type: 'withdraw', amount: 100, desc: '提现到微信', status: 'completed', createdAt: '2024-01-13' },
+    { id: 4, type: 'income', amount: 80, desc: '审核投稿奖励', createdAt: '2024-01-12' },
+    { id: 5, type: 'withdraw', amount: 160, desc: '提现到支付宝', status: 'pending', createdAt: '2024-01-12' },
+  ],
+  // Admin data
+  adminUsers: [
+    { id: 1, nickname: '小明同学', avatar: '', role: 'wallOwner', posts: 15, status: 'active' },
+    { id: 2, nickname: '小红', avatar: '', role: 'user', posts: 8, status: 'active' },
+    { id: 3, nickname: '急找人', avatar: '', role: 'user', posts: 3, status: 'active' },
+    { id: 4, nickname: '毕业学长', avatar: '', role: 'user', posts: 5, status: 'disabled' },
+  ],
+  wallOwnerApps: [
+    { id: 1, applicant: '小红', channel: '表白', status: 'pending', createdAt: '2024-01-15' },
+    { id: 2, applicant: '小明同学', channel: '求助', status: 'approved', createdAt: '2024-01-10' },
+  ],
+  withdrawApps: [
+    { id: 1, applicant: '小明同学', amount: 160, method: '支付宝', status: 'pending', createdAt: '2024-01-15' },
+    { id: 2, applicant: '小红', amount: 80, method: '微信', status: 'approved', createdAt: '2024-01-14' },
+  ],
+  adminComments: [
+    { id: 1, content: '加油！冲冲冲', postTitle: '图书馆三楼...', author: '路人甲', createdAt: '2024-01-15', status: 'approved' },
+    { id: 2, content: '这是哪个图书馆？', postTitle: '图书馆三楼...', author: '吃瓜群众', createdAt: '2024-01-15', status: 'approved' },
+    { id: 3, content: '广告内容，违规', postTitle: '出九成新iPad...', author: '骚扰号', createdAt: '2024-01-14', status: 'pending' },
+  ],
+  channels: [
+    { id: 1, name: '推荐', sort: 1, status: 'active' },
+    { id: 2, name: '表白', sort: 2, status: 'active' },
+    { id: 3, name: '求助', sort: 3, status: 'active' },
+    { id: 4, name: '二手', sort: 4, status: 'active' },
+    { id: 5, name: '活动', sort: 5, status: 'active' },
+  ],
+  pushRecords: [
+    { id: 1, range: '全部用户', content: '校园墙新增活动频道，快来投稿！', createdAt: '2024-01-14', status: 'sent' },
+    { id: 2, range: '墙主', content: '请及时审核待处理投稿', createdAt: '2024-01-13', status: 'sent' },
+  ],
+  tutorials: [
+    { id: 1, title: '如何投稿', content: '1. 点击底部"投稿"按钮\n2. 选择频道和标签\n3. 输入内容\n4. 预览并发布', updatedAt: '2024-01-10' },
+  ],
+  agreement: '欢迎使用校园墙投稿系统！\n\n1. 用户需遵守校园规范，不得发布违规内容。\n2. 投稿需经审核后方可展示。\n3. 禁止发布广告、骚扰等不当内容。\n4. 墙主需认真审核投稿内容。\n5. 本平台保留最终解释权。',
+};
+
+// ==================== UTILS ====================
+function $(sel) { return document.querySelector(sel); }
+function $$(sel) { return document.querySelectorAll(sel); }
+
+let _nextId = 200;
+function nextId() { return _nextId++; }
+
+function timeAgo(dateStr) {
+  const now = new Date();
+  const d = new Date(dateStr);
+  const diff = (now - d) / 1000;
+  if (diff < 60) return '刚刚';
+  if (diff < 3600) return Math.floor(diff/60) + '分钟前';
+  if (diff < 86400) return Math.floor(diff/3600) + '小时前';
+  return Math.floor(diff/86400) + '天前';
+}
+
+function getInitial(name) { return name ? name.charAt(0) : '?'; }
+
+function avatarHtml(name, size='w-8 h-8', textSize='text-xs') {
+  const colors = ['bg-blue-500','bg-green-500','bg-purple-500','bg-pink-500','bg-orange-500','bg-teal-500'];
+  const idx = name ? name.charCodeAt(0) % colors.length : 0;
+  return `<div class="${size} ${colors[idx]} rounded-full flex items-center justify-center text-white ${textSize} font-medium flex-shrink-0">${getInitial(name)}</div>`;
+}
+
+function showModal(html) {
+  $('#modal-root').innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 p-6 fade-in">${html}</div></div>`;
+}
+
+function closeModal() { $('#modal-root').innerHTML = ''; }
+
+// ==================== MODE SWITCHING ====================
+function switchMode(mode) {
+  store.mode = mode;
+  $('#mini-container').style.display = mode === 'mini' ? 'flex' : 'none';
+  $('#admin-container').style.display = mode === 'admin' ? 'flex' : 'none';
+  $('#btn-mini').className = mode === 'mini' ? 'px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-lake text-white' : 'px-4 py-1.5 rounded-md text-sm font-medium transition-all text-gray-600 hover:bg-gray-200';
+  $('#btn-admin').className = mode === 'admin' ? 'px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-lake text-white' : 'px-4 py-1.5 rounded-md text-sm font-medium transition-all text-gray-600 hover:bg-gray-200';
+  if (mode === 'mini') renderMini();
+  else renderAdmin();
+}
+
+// ==================== MINI PROGRAM ====================
+function renderMini() {
+  const page = store.miniPage;
+  const showTabBar = store.miniLoggedIn && !['login','poster'].includes(page);
+  $('#mini-tabbar').style.display = showTabBar ? 'flex' : 'none';
+  if (showTabBar) renderTabBar();
+  const container = $('#mini-page');
+  if (page === 'login') container.innerHTML = renderMiniLogin();
+  else if (page === 'home') container.innerHTML = renderMiniHome();
+  else if (page === 'create') container.innerHTML = renderMiniCreate();
+  else if (page === 'preview') container.innerHTML = renderMiniPreview();
+  else if (page === 'detail') container.innerHTML = renderMiniDetail();
+  else if (page === 'profile') container.innerHTML = renderMiniProfile();
+  else if (page === 'review') container.innerHTML = renderMiniReview();
+  else if (page === 'commission') container.innerHTML = renderMiniCommission();
+  else if (page === 'messages') container.innerHTML = renderMiniMessages();
+  else if (page === 'poster') container.innerHTML = renderMiniPoster();
+  container.scrollTop = 0;
+}
+
+function renderTabBar() {
+  const tabs = [
+    { key: 'home', label: '首页', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1"/>' },
+    { key: 'create', label: '投稿', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>', action: true },
+    { key: 'messages', label: '消息', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>' },
+    { key: 'profile', label: '我的', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>' },
+  ];
+  const unread = store.notifications.filter(n => !n.read).length;
+  $('#mini-tabbar').innerHTML = tabs.map(t => {
+    const isActive = t.action ? false : store.miniTab === t.key;
+    return `<button onclick="${t.action ? "store.miniPage='create';renderMini()" : "store.miniTab='"+t.key+"';store.miniPage='"+t.key+"';renderMini()"}" class="flex flex-col items-center justify-center flex-1 h-full btn-press ${t.action ? 'text-lake' : isActive ? 'text-lake' : 'text-gray-400'}">
+      <div class="relative"><svg class="w-5 h-5 ${t.action ? '' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">${t.icon}</svg>${t.key === 'messages' && unread > 0 ? '<span class="absolute -top-1 -right-2 bg-rose2 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">'+unread+'</span>' : ''}</div>
+      <span class="text-[10px] mt-0.5 ${t.action ? 'font-semibold' : ''}">${t.label}</span>
+    </button>`;
+  }).join('');
+}
+
+function navigateMini(page, tab) {
+  store.miniPage = page;
+  if (tab) store.miniTab = tab;
+  renderMini();
+}
+
+// ---- Mini: Login ----
+function renderMiniLogin() {
+  return `<div class="h-full flex flex-col items-center justify-center px-8 fade-in bg-gradient-to-b from-blue-50 to-white">
+    <div class="w-20 h-20 bg-lake rounded-2xl flex items-center justify-center shadow-lg mb-4">
+      <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+    </div>
+    <h1 class="text-xl font-semibold text-gray-800 mb-1">校园墙</h1>
+    <p class="text-sm text-slate2 mb-10">分享你的校园故事</p>
+    <button onclick="miniLogin()" class="w-full py-3 bg-emerald2 text-white rounded-xl font-medium text-base btn-press flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-shadow">
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 00.167-.054l1.903-1.114a.864.864 0 01.717-.098 10.16 10.16 0 002.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178A1.17 1.17 0 014.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178 1.17 1.17 0 01-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 01.598.082l1.584.926a.272.272 0 00.14.045c.133 0 .241-.11.241-.246 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 01-.023-.156.49.49 0 01.201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-7.062-6.122zM14.84 13.186c.535 0 .969.44.969.982a.976.976 0 01-.969.983.976.976 0 01-.969-.983c0-.542.434-.982.97-.982zm4.82 0c.535 0 .969.44.969.982a.976.976 0 01-.97.983.976.976 0 01-.968-.983c0-.542.434-.982.969-.982z"/></svg>
+      微信一键登录
+    </button>
+    <label id="agree-label" class="flex items-center gap-2 mt-5 cursor-pointer" onclick="toggleAgree()">
+      <div id="agree-check" class="w-4 h-4 rounded border-2 border-gray-300 flex items-center justify-center transition-colors"></div>
+      <span class="text-xs text-slate2">我已阅读并同意<a class="text-lake" onclick="event.stopPropagation();showModal('<h3 class=\\'font-semibold text-base mb-3\\'>用户协议</h3><div class=\\'text-sm text-gray-600 max-h-48 overflow-y-auto whitespace-pre-wrap\\'>'+store.agreement+'</div><button onclick=\\'closeModal()\\' class=\\'mt-4 w-full py-2 bg-lake text-white rounded-lg text-sm btn-press\\'>我知道了</button>')">《用户协议》</a></span>
+    </label>
+  </div>`;
+}
+
+let agreed = false;
+function toggleAgree() {
+  agreed = !agreed;
+  const el = $('#agree-check');
+  if (agreed) { el.className = 'w-4 h-4 rounded border-2 border-lake bg-lake flex items-center justify-center transition-colors'; el.innerHTML = '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>'; }
+  else { el.className = 'w-4 h-4 rounded border-2 border-gray-300 flex items-center justify-center transition-colors'; el.innerHTML = ''; }
+}
+
+function miniLogin() {
+  if (!agreed) { showModal('<p class="text-sm text-gray-600 text-center">请先阅读并同意用户协议</p><button onclick="closeModal()" class="mt-4 w-full py-2 bg-lake text-white rounded-lg text-sm btn-press">确定</button>'); return; }
+  store.miniLoggedIn = true;
+  store.miniPage = 'home';
+  store.miniTab = 'home';
+  renderMini();
+}
+
+// ---- Mini: Home ----
+function renderMiniHome() {
+  const filtered = store.currentChannel === '推荐' ? store.posts.filter(p => p.status === 'approved') : store.posts.filter(p => p.channel === store.currentChannel && p.status === 'approved');
+  return `<div class="fade-in">
+    <div class="sticky top-0 z-10 bg-white border-b border-gray-100">
+      <div class="px-4 py-2.5 text-center font-semibold text-base text-gray-800">校园墙</div>
+      <div class="flex px-2 gap-1 pb-2 overflow-x-auto">
+        ${CHANNELS.map(c => `<button onclick="store.currentChannel='${c}';renderMini()" class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${store.currentChannel === c ? 'bg-lake text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} btn-press">${c}</button>`).join('')}
+      </div>
+    </div>
+    <div class="px-3 py-3 space-y-3 pb-4">
+      ${filtered.length === 0 ? '<div class="text-center text-slate2 text-sm py-12">暂无投稿</div>' : filtered.map(p => renderPostCard(p)).join('')}
+    </div>
+  </div>`;
+}
+
+function renderPostCard(p) {
+  return `<div class="rounded-xl p-3.5 card-hover transition-all cursor-pointer" style="background:${p.bgColor}" onclick="store.viewingPostId=${p.id};navigateMini('detail')">
+    <p class="text-sm text-gray-800 leading-relaxed line-clamp-3">${p.content}</p>
+    <div class="flex flex-wrap gap-1.5 mt-2">
+      ${p.tags.map(t => `<span class="text-[10px] px-1.5 py-0.5 rounded bg-white/60 text-gray-600">${t}</span>`).join('')}
+    </div>
+    <div class="flex items-center justify-between mt-2.5 text-[11px] text-gray-500">
+      <span class="flex items-center gap-0.5"><svg class="w-3.5 h-3.5" fill="${store.myLikes.includes(p.id)?'#EF4444':'none'}" stroke="${store.myLikes.includes(p.id)?'#EF4444':'currentColor'}" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg> ${p.likes}</span>
+      <span class="flex items-center gap-0.5"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg> ${p.comments}</span>
+      <span>${p.channel}</span>
+    </div>
+  </div>`;
+}
+
+// ---- Mini: Create Post ----
+function renderMiniCreate() {
+  return `<div class="fade-in px-4 py-3 space-y-4">
+    <div class="flex items-center justify-between">
+      <button onclick="navigateMini('home','home')" class="text-sm text-slate2 btn-press">取消</button>
+      <span class="font-semibold text-base text-gray-800">创建投稿</span>
+      <button onclick="previewPost()" class="text-sm text-lake font-medium btn-press">预览</button>
+    </div>
+    <div>
+      <label class="text-xs text-slate2 mb-1 block">选择频道</label>
+      <select id="post-channel" onchange="store.newPost.channel=this.value" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-lake">
+        ${CHANNELS.filter(c=>c!=='推荐').map(c => `<option value="${c}" ${store.newPost.channel===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+    </div>
+    <div>
+      <label class="text-xs text-slate2 mb-1 block">投稿内容</label>
+      <textarea id="post-content" oninput="store.newPost.content=this.value" class="w-full h-28 p-3 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:border-lake" placeholder="写下你想说的话...">${store.newPost.content}</textarea>
+      <div class="text-right text-[10px] text-slate2 mt-0.5">${store.newPost.content.length}/500</div>
+    </div>
+    <div>
+      <label class="text-xs text-slate2 mb-1.5 block">添加图片（最多9张）</label>
+      <div class="flex flex-wrap gap-2">
+        ${store.newPost.images.map((img,i) => `<div class="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center text-xs text-gray-400 relative">
+          <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <button onclick="store.newPost.images.splice(${i},1);renderMini()" class="absolute -top-1 -right-1 w-4 h-4 bg-rose2 rounded-full text-white text-[8px] flex items-center justify-center">×</button>
+        </div>`).join('')}
+        ${store.newPost.images.length < 9 ? `<button onclick="addImage()" class="w-16 h-16 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-lake hover:text-lake transition-colors btn-press">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          <span class="text-[9px] mt-0.5">添加</span>
+        </button>` : ''}
+      </div>
+    </div>
+    <div>
+      <label class="text-xs text-slate2 mb-1.5 block">选择标签</label>
+      <div class="flex flex-wrap gap-1.5">
+        ${TAGS.map(t => `<button onclick="toggleTag('${t}')" class="px-2.5 py-1 rounded-full text-xs btn-press transition-colors ${store.newPost.tags.includes(t) ? 'bg-lake text-white' : 'bg-gray-100 text-gray-600'}">${t}</button>`).join('')}
+      </div>
+    </div>
+    <div>
+      <label class="text-xs text-slate2 mb-1.5 block">选择背景色</label>
+      <div class="flex gap-2.5">
+        ${CARD_COLORS.map(c => `<button onclick="store.newPost.bgColor='${c.value}';renderMini()" class="color-dot ${store.newPost.bgColor===c.value?'selected':''}" style="background:${c.value}" title="${c.name}"></button>`).join('')}
+      </div>
+    </div>
+    <button onclick="submitPost()" class="w-full py-3 bg-lake text-white rounded-xl font-medium text-sm btn-press shadow-md hover:shadow-lg transition-shadow">发布投稿</button>
+  </div>`;
+}
+
+function addImage() { store.newPost.images.push(`img_${Date.now()}`); renderMini(); }
+function toggleTag(tag) {
+  const idx = store.newPost.tags.indexOf(tag);
+  if (idx >= 0) store.newPost.tags.splice(idx, 1); else if (store.newPost.tags.length < 5) store.newPost.tags.push(tag);
+  renderMini();
+}
+function previewPost() {
+  if (!store.newPost.content.trim()) { showModal('<p class="text-sm text-gray-600 text-center">请输入投稿内容</p><button onclick="closeModal()" class="mt-4 w-full py-2 bg-lake text-white rounded-lg text-sm btn-press">确定</button>'); return; }
+  navigateMini('preview');
+}
+function submitPost() {
+  if (!store.newPost.content.trim()) { showModal('<p class="text-sm text-gray-600 text-center">请输入投稿内容</p><button onclick="closeModal()" class="mt-4 w-full py-2 bg-lake text-white rounded-lg text-sm btn-press">确定</button>'); return; }
+  const post = { id: nextId(), channel: store.newPost.channel, content: store.newPost.content, tags: [...store.newPost.tags], bgColor: store.newPost.bgColor, likes: 0, comments: 0, status: 'pending', author: store.user.nickname, createdAt: new Date().toLocaleString('zh-CN') };
+  store.posts.unshift(post);
+  store.myPosts.unshift({ id: post.id, content: post.content, channel: post.channel, status: 'pending', bgColor: post.bgColor, createdAt: post.createdAt });
+  store.newPost = { channel: '表白', content: '', images: [], tags: [], bgColor: '#FEF3C7' };
+  store.notifications.unshift({ id: nextId(), type: 'audit', title: '投稿已提交', content: '你的投稿正在审核中', read: false, postId: post.id, createdAt: post.createdAt });
+  navigateMini('home', 'home');
+}
+
+// ---- Mini: Preview ----
+function renderMiniPreview() {
+  const p = store.newPost;
+  return `<div class="fade-in px-4 py-3 space-y-4">
+    <div class="flex items-center justify-between">
+      <button onclick="navigateMini('create')" class="text-sm text-slate2 btn-press">返回修改</button>
+      <span class="font-semibold text-base text-gray-800">投稿预览</span>
+      <div class="w-12"></div>
+    </div>
+    <div class="rounded-xl p-4" style="background:${p.bgColor}">
+      <div class="flex items-center gap-2 mb-2">
+        ${avatarHtml(store.user.nickname)}
+        <span class="text-sm font-medium text-gray-700">${store.user.nickname}</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/60 text-gray-500">${p.channel}</span>
+      </div>
+      <p class="text-sm text-gray-800 leading-relaxed">${p.content || '（空内容）'}</p>
+      ${p.images.length > 0 ? `<div class="grid grid-cols-3 gap-1.5 mt-2">${p.images.map(() => `<div class="aspect-square rounded-lg bg-white/40 flex items-center justify-center"><svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>`).join('')}</div>` : ''}
+      <div class="flex flex-wrap gap-1.5 mt-2">
+        ${p.tags.map(t => `<span class="text-[10px] px-1.5 py-0.5 rounded bg-white/60 text-gray-600">${t}</span>`).join('')}
+      </div>
+      <div class="flex items-center gap-4 mt-3 text-[11px] text-gray-500">
+        <span class="flex items-center gap-0.5"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg> 0</span>
+        <span class="flex items-center gap-0.5"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg> 0</span>
+      </div>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="navigateMini('create')" class="flex-1 py-2.5 border border-gray-300 text-gray-600 rounded-xl text-sm font-medium btn-press">返回修改</button>
+      <button onclick="submitPost()" class="flex-1 py-2.5 bg-lake text-white rounded-xl text-sm font-medium btn-press shadow-md">确认发布</button>
+    </div>
+  </div>`;
+}
+
+// ---- Mini: Detail ----
+function renderMiniDetail() {
+  const p = store.posts.find(x => x.id === store.viewingPostId);
+  if (!p) return '<div class="p-4 text-center text-slate2">投稿不存在</div>';
+  const postComments = store.comments.filter(c => c.postId === p.id);
+  const liked = store.myLikes.includes(p.id);
+  return `<div class="fade-in">
+    <div class="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-2.5 flex items-center">
+      <button onclick="navigateMini('home','home')" class="text-lake text-sm btn-press">← 返回</button>
+      <span class="flex-1 text-center font-semibold text-sm text-gray-800">投稿详情</span>
+      <button onclick="store.viewingPostId=${p.id};navigateMini('poster')" class="text-lake text-sm btn-press">海报</button>
+    </div>
+    <div class="p-4 space-y-4">
+      <div class="rounded-xl p-4" style="background:${p.bgColor}">
+        <div class="flex items-center gap-2 mb-2">
+          ${avatarHtml(p.author)}
+          <span class="text-sm font-medium text-gray-700">${p.author}</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/60 text-gray-500">${p.channel}</span>
+        </div>
+        <p class="text-sm text-gray-800 leading-relaxed">${p.content}</p>
+        <div class="flex flex-wrap gap-1.5 mt-2">
+          ${p.tags.map(t => `<span class="text-[10px] px-1.5 py-0.5 rounded bg-white/60 text-gray-600">${t}</span>`).join('')}
+        </div>
+        <div class="text-[10px] text-gray-400 mt-2">${p.createdAt}</div>
+      </div>
+      <div class="flex gap-4">
+        <button onclick="toggleLike(${p.id})" class="flex items-center gap-1.5 text-sm btn-press ${liked ? 'text-rose2' : 'text-slate2'}">
+          <svg class="w-4 h-4" fill="${liked?'#EF4444':'none'}" stroke="${liked?'#EF4444':'currentColor'}" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          ${p.likes}
+        </button>
+        <span class="flex items-center gap-1.5 text-sm text-slate2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+          ${p.comments}
+        </span>
+      </div>
+      <!-- Comments -->
+      <div>
+        <div class="text-sm font-medium text-gray-800 mb-2">评论 (${postComments.length})</div>
+        ${postComments.length === 0 ? '<div class="text-xs text-slate2 text-center py-4">暂无评论</div>' :
+          postComments.map(c => `<div class="flex gap-2 mb-3">
+            ${avatarHtml(c.author, 'w-6 h-6', 'text-[10px]')}
+            <div class="flex-1">
+              <span class="text-xs font-medium text-gray-700">${c.author}</span>
+              <p class="text-xs text-gray-600 mt-0.5">${c.content}</p>
+              <span class="text-[10px] text-gray-400">${c.createdAt}</span>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <!-- Comment Input -->
+    <div class="sticky bottom-0 bg-white border-t border-gray-100 p-3 flex gap-2">
+      <input id="comment-input" type="text" placeholder="写评论..." class="flex-1 py-2 px-3 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-lake">
+      <button onclick="addComment(${p.id})" class="px-4 py-2 bg-lake text-white rounded-full text-sm btn-press">发送</button>
+    </div>
+  </div>`;
+}
+
+function toggleLike(postId) {
+  const idx = store.myLikes.indexOf(postId);
+  const post = store.posts.find(p => p.id === postId);
+  if (idx >= 0) { store.myLikes.splice(idx, 1); post.likes--; }
+  else { store.myLikes.push(postId); post.likes++; }
+  renderMini();
+}
+
+function addComment(postId) {
+  const input = $('#comment-input');
+  if (!input || !input.value.trim()) return;
+  store.comments.push({ id: nextId(), postId, author: store.user.nickname, content: input.value.trim(), createdAt: new Date().toLocaleString('zh-CN') });
+  const post = store.posts.find(p => p.id === postId);
+  if (post) post.comments++;
+  renderMini();
+}
+
+// ---- Mini: Profile ----
+function renderMiniProfile() {
+  const role = store.user.role;
+  const statusMap = { pending: ['待审核','bg-yellow-100 text-yellow-700'], approved: ['已通过','bg-green-100 text-green-700'], rejected: ['已驳回','bg-red-100 text-red-700'] };
+  return `<div class="fade-in">
+    <div class="bg-white px-4 pt-6 pb-4 border-b border-gray-100">
+      <div class="flex items-center gap-3">
+        ${avatarHtml(store.user.nickname, 'w-14 h-14', 'text-xl')}
+        <div>
+          <div class="font-semibold text-gray-800">${store.user.nickname}</div>
+          <span class="text-[10px] px-2 py-0.5 rounded-full ${role==='wallOwner'?'bg-lake/10 text-lake':'bg-gray-100 text-gray-500'}">${role==='wallOwner'?'墙主':'普通用户'}</span>
+        </div>
+      </div>
+    </div>
+    <div class="p-4 space-y-3">
+      <div class="bg-white rounded-xl overflow-hidden">
+        <div class="px-4 py-3 text-sm font-medium text-gray-800 border-b border-gray-50">我的投稿</div>
+        ${store.myPosts.map(mp => {
+          const [label, cls] = statusMap[mp.status];
+          return `<div class="px-4 py-2.5 flex items-center justify-between border-b border-gray-50 last:border-0">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-gray-700 truncate">${mp.content}</p>
+              <span class="text-[10px] text-gray-400">${mp.createdAt}</span>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded-full ${cls} ml-2 flex-shrink-0">${label}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="bg-white rounded-xl overflow-hidden">
+        <div class="px-4 py-3 text-sm font-medium text-gray-800 border-b border-gray-50">我的点赞 (${store.myLikes.length})</div>
+        <div class="px-4 py-3 text-xs text-slate2 text-center">共点赞了 ${store.myLikes.length} 条投稿</div>
+      </div>
+      ${role === 'wallOwner' ? `
+      <div class="bg-white rounded-xl overflow-hidden">
+        <button onclick="navigateMini('review')" class="w-full px-4 py-3 text-sm text-gray-700 flex items-center justify-between btn-press">
+          <span class="flex items-center gap-2"><svg class="w-4 h-4 text-lake" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>墙主审核</span>
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <button onclick="navigateMini('commission')" class="w-full px-4 py-3 text-sm text-gray-700 flex items-center justify-between border-t border-gray-50 btn-press">
+          <span class="flex items-center gap-2"><svg class="w-4 h-4 text-emerald2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>佣金与提现</span>
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>` : ''}
+      <div class="bg-white rounded-xl overflow-hidden">
+        <button onclick="showModal('<h3 class=\\'font-semibold text-base mb-3\\'>设置</h3><div class=\\'space-y-3\\'><p class=\\'text-sm text-gray-600\\'>消息通知：已开启</p><p class=\\'text-sm text-gray-600\\'>隐私模式：已关闭</p></div><button onclick=\\'closeModal()\\' class=\\'mt-4 w-full py-2 bg-lake text-white rounded-lg text-sm btn-press\\'>确定</button>')" class="w-full px-4 py-3 text-sm text-gray-700 flex items-center justify-between btn-press">
+          <span class="flex items-center gap-2"><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>设置</span>
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ---- Mini: Review ----
+function renderMiniReview() {
+  const pending = store.posts.filter(p => p.status === 'pending');
+  const approved = store.posts.filter(p => p.status === 'approved').length;
+  const rejected = store.posts.filter(p => p.status === 'rejected').length;
+  return `<div class="fade-in">
+    <div class="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-2.5 flex items-center">
+      <button onclick="navigateMini('profile','profile')" class="text-lake text-sm btn-press">← 返回</button>
+      <span class="flex-1 text-center font-semibold text-sm text-gray-800">审核管理</span>
+      <div class="w-12"></div>
+    </div>
+    <div class="p-4 space-y-3">
+      <div class="grid grid-cols-3 gap-2">
+        <div class="bg-yellow-50 rounded-lg p-2.5 text-center"><div class="text-lg font-semibold text-yellow-600">${pending.length}</div><div class="text-[10px] text-yellow-600">待审核</div></div>
+        <div class="bg-green-50 rounded-lg p-2.5 text-center"><div class="text-lg font-semibold text-green-600">${approved}</div><div class="text-[10px] text-green-600">已通过</div></div>
+        <div class="bg-red-50 rounded-lg p-2.5 text-center"><div class="text-lg font-semibold text-red-600">${rejected}</div><div class="text-[10px] text-red-600">已驳回</div></div>
+      </div>
+      <div class="text-sm font-medium text-gray-800">待审核投稿</div>
+      ${pending.length === 0 ? '<div class="text-center text-slate2 text-xs py-8">暂无待审核投稿</div>' :
+        pending.map(p => `<div class="bg-white rounded-xl p-3 border border-gray-100">
+          <div class="flex items-center gap-2 mb-1.5">
+            ${avatarHtml(p.author, 'w-6 h-6', 'text-[10px]')}
+            <span class="text-xs font-medium text-gray-700">${p.author}</span>
+            <span class="text-[10px] text-gray-400">${p.channel} · ${timeAgo(p.createdAt)}</span>
+          </div>
+          <p class="text-xs text-gray-600 line-clamp-2 mb-2">${p.content}</p>
+          <div class="flex gap-2">
+            <button onclick="approvePost(${p.id})" class="flex-1 py-1.5 bg-emerald2 text-white rounded-lg text-xs font-medium btn-press">通过</button>
+            <button onclick="rejectPost(${p.id})" class="flex-1 py-1.5 bg-rose2 text-white rounded-lg text-xs font-medium btn-press">驳回</button>
+          </div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function approvePost(id) {
+  const p = store.posts.find(x => x.id === id);
+  if (p) { p.status = 'approved'; }
+  const mp = store.myPosts.find(x => x.id === id);
+  if (mp) mp.status = 'approved';
+  store.notifications.unshift({ id: nextId(), type: 'audit', title: '投稿审核通过', content: `你的投稿"${p?p.content.substring(0,10):''}..."已通过审核`, read: false, postId: id, createdAt: new Date().toLocaleString('zh-CN') });
+  renderMini();
+}
+
+function rejectPost(id) {
+  showModal(`
+    <h3 class="font-semibold text-base mb-3">驳回原因</h3>
+    <textarea id="reject-reason" class="w-full h-20 p-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:border-lake" placeholder="请输入驳回原因..."></textarea>
+    <div class="flex gap-2 mt-3">
+      <button onclick="closeModal()" class="flex-1 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm btn-press">取消</button>
+      <button onclick="doReject(${id})" class="flex-1 py-2 bg-rose2 text-white rounded-lg text-sm btn-press">确认驳回</button>
+    </div>
+  `);
+}
+
+function doReject(id) {
+  const reason = $('#reject-reason')?.value || '内容不符合规范';
+  const p = store.posts.find(x => x.id === id);
+  if (p) p.status = 'rejected';
+  const mp = store.myPosts.find(x => x.id === id);
+  if (mp) { mp.status = 'rejected'; mp.rejectReason = reason; }
+  store.notifications.unshift({ id: nextId(), type: 'audit', title: '投稿被驳回', content: `你的投稿被驳回，原因：${reason}`, read: false, postId: id, createdAt: new Date().toLocaleString('zh-CN') });
+  closeModal();
+  renderMini();
+}
+
+// ---- Mini: Commission ----
+function renderMiniCommission() {
+  return `<div class="fade-in">
+    <div class="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-2.5 flex items-center">
+      <button onclick="navigateMini('profile','profile')" class="text-lake text-sm btn-press">← 返回</button>
+      <span class="flex-1 text-center font-semibold text-sm text-gray-800">佣金与提现</span>
+      <div class="w-12"></div>
+    </div>
+    <div class="p-4 space-y-3">
+      <div class="bg-gradient-to-r from-lake to-indigo2 rounded-xl p-4 text-white">
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div><div class="text-xl font-semibold">${store.commission.total}</div><div class="text-[10px] opacity-80">累计佣金</div></div>
+          <div><div class="text-xl font-semibold">${store.commission.available}</div><div class="text-[10px] opacity-80">可提现</div></div>
+          <div><div class="text-xl font-semibold">${store.commission.withdrawn}</div><div class="text-[10px] opacity-80">已提现</div></div>
+        </div>
+        <button onclick="showWithdrawModal()" class="w-full mt-3 py-2 bg-white text-lake rounded-lg text-sm font-medium btn-press">提现</button>
+      </div>
+      <div class="text-sm font-medium text-gray-800">佣金明细</div>
+      ${store.commissionRecords.map(r => `<div class="bg-white rounded-lg p-3 flex items-center justify-between">
+        <div>
+          <div class="text-xs text-gray-700">${r.desc}</div>
+          <div class="text-[10px] text-gray-400">${r.createdAt}</div>
+        </div>
+        <div class="text-sm font-medium ${r.type==='income'?'text-emerald2':'text-rose2'}">${r.type==='income'?'+':'-'}${r.amount}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function showWithdrawModal() {
+  showModal(`
+    <h3 class="font-semibold text-base mb-3">申请提现</h3>
+    <div class="text-xs text-slate2 mb-3">可提现金额：¥${store.commission.available}</div>
+    <input id="withdraw-amount" type="number" placeholder="输入提现金额" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm mb-2 focus:outline-none focus:border-lake">
+    <select id="withdraw-method" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm mb-3 focus:outline-none focus:border-lake">
+      <option value="微信">微信</option>
+      <option value="支付宝">支付宝</option>
+    </select>
+    <div class="flex gap-2">
+      <button onclick="closeModal()" class="flex-1 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm btn-press">取消</button>
+      <button onclick="doWithdraw()" class="flex-1 py-2 bg-lake text-white rounded-lg text-sm btn-press">确认提现</button>
+    </div>
+  `);
+}
+
+function doWithdraw() {
+  const amount = parseFloat($('#withdraw-amount')?.value);
+  const method = $('#withdraw-method')?.value || '微信';
+  if (!amount || amount <= 0 || amount > store.commission.available) {
+    showModal('<p class="text-sm text-gray-600 text-center">请输入有效金额</p><button onclick="closeModal()" class="mt-4 w-full py-2 bg-lake text-white rounded-lg text-sm btn-press">确定</button>');
+    return;
+  }
+  store.commission.available -= amount;
+  store.commission.withdrawn += amount;
+  store.commissionRecords.unshift({ id: nextId(), type: 'withdraw', amount, desc: `提现到${method}`, status: 'pending', createdAt: new Date().toLocaleDateString('zh-CN') });
+  store.withdrawApps.unshift({ id: nextId(), applicant: store.user.nickname, amount, method, status: 'pending', createdAt: new Date().toLocaleDateString('zh-CN') });
+  closeModal();
+  renderMini();
+}
+
+// ---- Mini: Messages ----
+function renderMiniMessages() {
+  const typeIcons = { audit: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>', like: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>', comment: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>', system: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' };
+  const typeColors = { audit: 'bg-blue-100 text-lake', like: 'bg-pink-100 text-pink-500', comment: 'bg-green-100 text-green-600', system: 'bg-gray-100 text-gray-500' };
+  return `<div class="fade-in">
+    <div class="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-2.5 text-center font-semibold text-sm text-gray-800">消息</div>
+    <div class="divide-y divide-gray-50">
+      ${store.notifications.map(n => `<div onclick="readNotification(${n.id})" class="px-4 py-3 flex gap-3 items-start cursor-pointer hover:bg-gray-50 transition-colors ${n.read?'':'bg-blue-50/50'}">
+        <div class="w-8 h-8 rounded-full ${typeColors[n.type]} flex items-center justify-center flex-shrink-0">${typeIcons[n.type]}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium text-gray-800">${n.title}</span>
+            ${n.read?'':'<span class="w-2 h-2 bg-lake rounded-full flex-shrink-0"></span>'}
+          </div>
+          <p class="text-xs text-gray-500 mt-0.5 truncate">${n.content}</p>
+          <span class="text-[10px] text-gray-400">${timeAgo(n.createdAt)}</span>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function readNotification(id) {
+  const n = store.notifications.find(x => x.id === id);
+  if (n) { n.read = true; if (n.postId) { store.viewingPostId = n.postId; navigateMini('detail'); return; } }
+  renderMini();
+}
+
+// ---- Mini: Poster ----
+function renderMiniPoster() {
+  const p = store.posts.find(x => x.id === store.viewingPostId);
+  if (!p) return '<div class="p-4 text-center text-slate2">投稿不存在</div>';
+  return `<div class="fade-in px-4 py-3 space-y-4 flex flex-col items-center">
+    <div class="flex items-center justify-between w-full">
+      <button onclick="navigateMini('detail')" class="text-sm text-slate2 btn-press">← 返回</button>
+      <span class="font-semibold text-sm text-gray-800">海报预览</span>
+      <div class="w-12"></div>
+    </div>
+    <div class="w-full rounded-xl p-5 shadow-lg" style="background:${p.bgColor}">
+      <div class="text-center mb-3">
+        <span class="text-xs text-gray-500">— 校园墙 —</span>
+      </div>
+      <p class="text-sm text-gray-800 leading-relaxed text-center">${p.content}</p>
+      <div class="flex flex-wrap gap-1.5 mt-3 justify-center">
+        ${p.tags.map(t => `<span class="text-[10px] px-1.5 py-0.5 rounded bg-white/60 text-gray-600">#${t}</span>`).join('')}
+      </div>
+      <div class="text-center mt-4 text-[10px] text-gray-400">来自校园墙 · ${p.channel}</div>
+    </div>
+    <button onclick="showModal('<p class=\\'text-sm text-gray-600 text-center\\'>海报已保存到相册</p><button onclick=\\'closeModal()\\' class=\\'mt-4 w-full py-2 bg-lake text-white rounded-lg text-sm btn-press\\'>确定</button>')" class="w-full py-3 bg-lake text-white rounded-xl font-medium text-sm btn-press shadow-md flex items-center justify-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      保存到相册
+    </button>
+  </div>`;
+}
+
+// ==================== ADMIN ====================
+const adminMenuItems = [
+  { key: 'dashboard', label: '仪表盘', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>' },
+  { key: 'posts', label: '投稿管理', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>' },
+  { key: 'users', label: '用户管理', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>' },
+  { key: 'wallowner', label: '墙主申请', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>' },
+  { key: 'withdraw', label: '提现审核', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>' },
+  { key: 'comments', label: '评论管理', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>' },
+  { key: 'channels', label: '频道管理', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>' },
+  { key: 'push', label: '通知推送', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>' },
+  { key: 'tutorials', label: '教程管理', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>' },
+  { key: 'agreement', label: '用户协议', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>' },
+];
+
+function renderAdmin() {
+  if (store.adminPage === 'login') {
+    $('#admin-container').innerHTML = renderAdminLogin();
+    $('#admin-container').style.display = 'flex';
+    $('#admin-container').className = 'pt-14 min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100';
+    return;
+  }
+  $('#admin-container').className = 'pt-14 min-h-screen flex';
+  $('#admin-container').innerHTML = `
+    <div class="w-60 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 h-[calc(100vh-3.5rem)] fixed left-0 top-14">
+      <div class="p-4 border-b border-gray-100">
+        <div class="text-sm font-semibold text-indigo2">校园墙管理后台</div>
+        <div class="text-xs text-slate2 mt-1">${store.adminUser.username}@campus.com</div>
+      </div>
+      <nav class="flex-1 overflow-y-auto py-2">
+        ${adminMenuItems.map(m => `<button onclick="store.adminPage='${m.key}';renderAdmin()" class="admin-sidebar-item w-full px-4 py-2.5 flex items-center gap-3 text-sm ${store.adminPage===m.key?'active':'text-gray-600'}">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">${m.icon}</svg>
+          ${m.label}
+        </button>`).join('')}
+      </nav>
+      <div class="p-4 border-t border-gray-100">
+        <button onclick="adminLogout()" class="w-full text-sm text-slate2 hover:text-rose2 transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          退出登录
+        </button>
+      </div>
+    </div>
+    <div class="ml-60 flex-1 p-6 min-h-[calc(100vh-3.5rem)]">
+      <div id="admin-page" class="fade-in"></div>
+    </div>`;
+  renderAdminPage();
+}
+
+function renderAdminPage() {
+  const el = document.getElementById('admin-page');
+  if (!el) return;
+  const pages = { dashboard: renderAdminDashboard, posts: renderAdminPosts, users: renderAdminUsers, wallowner: renderAdminWallOwner, withdraw: renderAdminWithdraw, comments: renderAdminComments, channels: renderAdminChannels, push: renderAdminPush, tutorials: renderAdminTutorials, agreement: renderAdminAgreement };
+  el.innerHTML = (pages[store.adminPage] || (() => ''))();
+}
+
+function adminLogout() { store.adminLoggedIn = false; store.adminPage = 'login'; renderAdmin(); }
+
+// ---- Admin: Login ----
+function renderAdminLogin() {
+  return `<div class="w-full max-w-md mx-auto fade-in">
+    <div class="bg-white rounded-2xl shadow-lg p-8">
+      <div class="text-center mb-6">
+        <div class="w-14 h-14 bg-lake rounded-xl flex items-center justify-center mx-auto mb-3">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
+        </div>
+        <h2 class="text-xl font-semibold text-gray-800">后台管理系统</h2>
+        <p class="text-sm text-slate2 mt-1">请登录管理员账号</p>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="text-sm text-gray-600 mb-1 block">账号</label>
+          <input id="admin-username" type="text" value="admin" class="w-full py-2.5 px-4 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-lake focus:ring-1 focus:ring-lake/20">
+        </div>
+        <div>
+          <label class="text-sm text-gray-600 mb-1 block">密码</label>
+          <input id="admin-password" type="password" value="admin123" class="w-full py-2.5 px-4 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-lake focus:ring-1 focus:ring-lake/20">
+        </div>
+        <button onclick="adminLogin()" class="w-full py-2.5 bg-lake text-white rounded-lg font-medium text-sm btn-press shadow-md hover:shadow-lg transition-shadow">登录</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function adminLogin() {
+  store.adminLoggedIn = true;
+  store.adminPage = 'dashboard';
+  renderAdmin();
+}
+
+// ---- Admin: Dashboard ----
+function renderAdminDashboard() {
+  const pendingCount = store.posts.filter(p => p.status === 'pending').length;
+  const todayWithdraw = store.withdrawApps.filter(w => w.status === 'pending').reduce((s, w) => s + w.amount, 0);
+  return `<div class="space-y-6">
+    <h2 class="text-xl font-semibold text-gray-800">仪表盘</h2>
+    <div class="grid grid-cols-4 gap-4">
+      ${[
+        { label: '今日投稿', value: store.posts.length, color: 'bg-blue-50 text-lake', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>' },
+        { label: '总用户数', value: store.adminUsers.length, color: 'bg-green-50 text-emerald2', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>' },
+        { label: '待审核', value: pendingCount, color: 'bg-yellow-50 text-yellow-600', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>' },
+        { label: '待审提现', value: '¥'+todayWithdraw, color: 'bg-purple-50 text-purple-600', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>' },
+      ].map(c => `<div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div class="flex items-center justify-between">
+          <div><div class="text-xs text-slate2">${c.label}</div><div class="text-2xl font-semibold mt-1 ${c.color.split(' ')[1]}">${c.value}</div></div>
+          <div class="w-10 h-10 ${c.color.split(' ')[0]} rounded-lg flex items-center justify-center"><svg class="w-5 h-5 ${c.color.split(' ')[1]}" fill="none" stroke="currentColor" viewBox="0 0 24 24">${c.icon}</svg></div>
+        </div>
+      </div>`).join('')}
+    </div>
+    <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+      <h3 class="text-sm font-medium text-gray-800 mb-4">投稿趋势（近7天）</h3>
+      <div class="h-40 flex items-end gap-3">
+        ${[12,18,8,22,15,28,20].map((v, i) => `<div class="flex-1 flex flex-col items-center gap-1">
+          <div class="w-full bg-lake/20 rounded-t" style="height:${v*4}px"><div class="w-full bg-lake rounded-t transition-all" style="height:${v*3}px"></div></div>
+          <span class="text-[10px] text-slate2">${['一','二','三','四','五','六','日'][i]}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+      <h3 class="text-sm font-medium text-gray-800 mb-3">最新投稿</h3>
+      <div class="space-y-2">
+        ${store.posts.slice(0, 5).map(p => `<div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+          <div class="flex-1 min-w-0"><p class="text-sm text-gray-700 truncate">${p.content}</p><span class="text-[10px] text-slate2">${p.channel} · ${p.author} · ${timeAgo(p.createdAt)}</span></div>
+          <span class="text-[10px] px-2 py-0.5 rounded-full ${p.status==='approved'?'bg-green-100 text-green-700':p.status==='pending'?'bg-yellow-100 text-yellow-700':'bg-red-100 text-red-700'}">${p.status==='approved'?'已通过':p.status==='pending'?'待审核':'已驳回'}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ---- Admin: Posts ----
+function renderAdminPosts() {
+  const statusMap = { approved: ['已通过','bg-green-100 text-green-700'], pending: ['待审核','bg-yellow-100 text-yellow-700'], rejected: ['已驳回','bg-red-100 text-red-700'] };
+  return `<div class="space-y-4">
+    <h2 class="text-xl font-semibold text-gray-800">投稿管理</h2>
+    <div class="flex gap-3 items-center">
+      <input type="text" placeholder="搜索投稿内容..." class="py-2 px-4 border border-gray-200 rounded-lg text-sm flex-1 focus:outline-none focus:border-lake">
+      <select class="py-2 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none"><option>全部频道</option>${CHANNELS.map(c=>'<option>'+c+'</option>').join('')}</select>
+      <select class="py-2 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none"><option>全部状态</option><option>待审核</option><option>已通过</option><option>已驳回</option></select>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50"><tr><th class="py-3 px-4 text-left text-xs font-medium text-slate2">ID</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">内容</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">频道</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">投稿人</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">状态</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">时间</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">操作</th></tr></thead>
+        <tbody>
+          ${store.posts.map(p => { const [sl,sc] = statusMap[p.status]; return `<tr class="border-t border-gray-50 hover:bg-gray-50">
+            <td class="py-3 px-4 text-gray-500">${p.id}</td>
+            <td class="py-3 px-4 text-gray-700 max-w-[200px] truncate">${p.content}</td>
+            <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-lake">${p.channel}</span></td>
+            <td class="py-3 px-4 text-gray-600">${p.author}</td>
+            <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded-full ${sc}">${sl}</span></td>
+            <td class="py-3 px-4 text-gray-400 text-xs">${p.createdAt}</td>
+            <td class="py-3 px-4"><div class="flex gap-1">
+              ${p.status==='pending'?`<button onclick="approvePost(${p.id});renderAdmin()" class="text-xs px-2 py-1 bg-green-50 text-green-600 rounded hover:bg-green-100 btn-press">通过</button><button onclick="rejectPost(${p.id});setTimeout(renderAdmin,100)" class="text-xs px-2 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 btn-press">驳回</button>`:''}
+              <button onclick="store.posts=store.posts.filter(x=>x.id!==${p.id});renderAdmin()" class="text-xs px-2 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 btn-press">删除</button>
+            </div></td>
+          </tr>`; }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ---- Admin: Users ----
+function renderAdminUsers() {
+  return `<div class="space-y-4">
+    <h2 class="text-xl font-semibold text-gray-800">用户管理</h2>
+    <div class="flex gap-3 items-center">
+      <input type="text" placeholder="搜索用户..." class="py-2 px-4 border border-gray-200 rounded-lg text-sm flex-1 focus:outline-none focus:border-lake">
+      <select class="py-2 px-3 border border-gray-200 rounded-lg text-sm"><option>全部角色</option><option>普通用户</option><option>墙主</option></select>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50"><tr><th class="py-3 px-4 text-left text-xs font-medium text-slate2">ID</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">用户</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">角色</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">投稿数</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">状态</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">操作</th></tr></thead>
+        <tbody>
+          ${store.adminUsers.map(u => `<tr class="border-t border-gray-50 hover:bg-gray-50">
+            <td class="py-3 px-4 text-gray-500">${u.id}</td>
+            <td class="py-3 px-4"><div class="flex items-center gap-2">${avatarHtml(u.nickname,'w-7 h-7','text-[10px]')}<span class="text-gray-700">${u.nickname}</span></div></td>
+            <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded-full ${u.role==='wallOwner'?'bg-blue-100 text-lake':'bg-gray-100 text-gray-600'}">${u.role==='wallOwner'?'墙主':'普通用户'}</span></td>
+            <td class="py-3 px-4 text-gray-600">${u.posts}</td>
+            <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded-full ${u.status==='active'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}">${u.status==='active'?'正常':'已禁用'}</span></td>
+            <td class="py-3 px-4"><div class="flex gap-1">
+              <button onclick="toggleUserRole(${u.id})" class="text-xs px-2 py-1 bg-blue-50 text-lake rounded hover:bg-blue-100 btn-press">${u.role==='wallOwner'?'取消墙主':'设为墙主'}</button>
+              <button onclick="toggleUserStatus(${u.id})" class="text-xs px-2 py-1 ${u.status==='active'?'bg-red-50 text-red-600':'bg-green-50 text-green-600'} rounded btn-press">${u.status==='active'?'禁用':'启用'}</button>
+            </div></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function toggleUserRole(id) { const u = store.adminUsers.find(x=>x.id===id); if(u) u.role = u.role==='wallOwner'?'user':'wallOwner'; renderAdmin(); }
+function toggleUserStatus(id) { const u = store.adminUsers.find(x=>x.id===id); if(u) u.status = u.status==='active'?'disabled':'active'; renderAdmin(); }
+
+// ---- Admin: Wall Owner Apps ----
+function renderAdminWallOwner() {
+  const statusMap = { pending: ['待审核','bg-yellow-100 text-yellow-700'], approved: ['已通过','bg-green-100 text-green-700'], rejected: ['已驳回','bg-red-100 text-red-700'] };
+  return `<div class="space-y-4">
+    <h2 class="text-xl font-semibold text-gray-800">墙主申请管理</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50"><tr><th class="py-3 px-4 text-left text-xs font-medium text-slate2">申请人</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">申请频道</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">申请时间</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">状态</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">操作</th></tr></thead>
+        <tbody>
+          ${store.wallOwnerApps.map(a => { const [sl,sc] = statusMap[a.status]; return `<tr class="border-t border-gray-50 hover:bg-gray-50">
+            <td class="py-3 px-4 text-gray-700">${a.applicant}</td>
+            <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-lake">${a.channel}</span></td>
+            <td class="py-3 px-4 text-gray-400 text-xs">${a.createdAt}</td>
+            <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded-full ${sc}">${sl}</span></td>
+            <td class="py-3 px-4">${a.status==='pending'?`<div class="flex gap-1"><button onclick="store.wallOwnerApps.find(x=>x.id===${a.id}).status='approved';renderAdmin()" class="text-xs px-2 py-1 bg-green-50 text-green-600 rounded btn-press">通过</button><button onclick="store.wallOwnerApps.find(x=>x.id===${a.id}).status='rejected';renderAdmin()" class="text-xs px-2 py-1 bg-red-50 text-red-600 rounded btn-press">驳回</button></div>`:'<span class="text-xs text-slate2">-</span>'}</td>
+          </tr>`; }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ---- Admin: Withdraw ----
+function renderAdminWithdraw() {
+  const statusMap = { pending: ['待审核','bg-yellow-100 text-yellow-700'], approved: ['已通过','bg-green-100 text-green-700'], rejected: ['已驳回','bg-red-100 text-red-700'] };
+  return `<div class="space-y-4">
+    <h2 class="text-xl font-semibold text-gray-800">提现审核</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50"><tr><th class="py-3 px-4 text-left text-xs font-medium text-slate2">申请人</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">金额</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">方式</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">时间</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">状态</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">操作</th></tr></thead>
+        <tbody>
+          ${store.withdrawApps.map(w => { const [sl,sc] = statusMap[w.status]; return `<tr class="border-t border-gray-50 hover:bg-gray-50">
+            <td class="py-3 px-4 text-gray-700">${w.applicant}</td>
+            <td class="py-3 px-4 text-gray-700 font-medium">¥${w.amount}</td>
+            <td class="py-3 px-4 text-gray-600">${w.method}</td>
+            <td class="py-3 px-4 text-gray-400 text-xs">${w.createdAt}</td>
+            <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded-full ${sc}">${sl}</span></td>
+            <td class="py-3 px-4">${w.status==='pending'?`<div class="flex gap-1"><button onclick="store.withdrawApps.find(x=>x.id===${w.id}).status='approved';renderAdmin()" class="text-xs px-2 py-1 bg-green-50 text-green-600 rounded btn-press">通过</button><button onclick="store.withdrawApps.find(x=>x.id===${w.id}).status='rejected';renderAdmin()" class="text-xs px-2 py-1 bg-red-50 text-red-600 rounded btn-press">驳回</button></div>`:'<span class="text-xs text-slate2">-</span>'}</td>
+          </tr>`; }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ---- Admin: Comments ----
+function renderAdminComments() {
+  return `<div class="space-y-4">
+    <h2 class="text-xl font-semibold text-gray-800">评论管理</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50"><tr><th class="py-3 px-4 text-left text-xs font-medium text-slate2">评论内容</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">所属投稿</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">评论人</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">时间</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">状态</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">操作</th></tr></thead>
+        <tbody>
+          ${store.adminComments.map(c => `<tr class="border-t border-gray-50 hover:bg-gray-50">
+            <td class="py-3 px-4 text-gray-700 max-w-[200px] truncate">${c.content}</td>
+            <td class="py-3 px-4 text-gray-500 text-xs max-w-[150px] truncate">${c.postTitle}</td>
+            <td class="py-3 px-4 text-gray-600">${c.author}</td>
+            <td class="py-3 px-4 text-gray-400 text-xs">${c.createdAt}</td>
+            <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded-full ${c.status==='approved'?'bg-green-100 text-green-700':'bg-yellow-100 text-yellow-700'}">${c.status==='approved'?'已通过':'待审核'}</span></td>
+            <td class="py-3 px-4"><div class="flex gap-1">
+              ${c.status==='pending'?`<button onclick="store.adminComments.find(x=>x.id===${c.id}).status='approved';renderAdmin()" class="text-xs px-2 py-1 bg-green-50 text-green-600 rounded btn-press">通过</button>`:''}
+              <button onclick="store.adminComments=store.adminComments.filter(x=>x.id!==${c.id});renderAdmin()" class="text-xs px-2 py-1 bg-red-50 text-red-600 rounded btn-press">删除</button>
+            </div></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ---- Admin: Channels ----
+function renderAdminChannels() {
+  return `<div class="space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-semibold text-gray-800">频道管理</h2>
+      <button onclick="showChannelModal()" class="px-4 py-2 bg-lake text-white rounded-lg text-sm font-medium btn-press shadow-sm">+ 新增频道</button>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50"><tr><th class="py-3 px-4 text-left text-xs font-medium text-slate2">ID</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">名称</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">排序</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">状态</th><th class="py-3 px-4 text-left text-xs font-medium text-slate2">操作</th></tr></thead>
+        <tbody>
+          ${store.channels.map(c => `<tr class="border-t border-gray-50 hover:bg-gray-50">
+            <td class="py-3 px-4 text-gray-500">${c.id}</td>
+            <td class="py-3 px-4 text-gray-700 font-medium">${c.name}</td>
+            <td class="py-3 px-4 text-gray-600">${c.sort}</td>
+            <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded-full ${c.status==='active'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}">${c.status==='active'?'启用':'禁用'}</span></td>
+            <td class="py-3 px-4"><div class="flex gap-1">
+              <button onclick="showChannelModal(${c.id})" class="text-xs px-2 py-1 bg-blue-50 text-lake rounded btn-press">编辑</button>
+              <button onclick="store.channels.find(x=>x.id===${c.id}).status=store.channels.find(x=>x.id===${c.id}).status==='active'?'disabled':'active';renderAdmin()" class="text-xs px-2 py-1 ${c.status==='active'?'bg-red-50 text-red-600':'bg-green-50 text-green-600'} rounded btn-press">${c.status==='active'?'禁用':'启用'}</button>
+            </div></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function showChannelModal(editId) {
+  const ch = editId ? store.channels.find(c => c.id === editId) : null;
+  showModal(`
+    <h3 class="font-semibold text-base mb-3">${ch?'编辑频道':'新增频道'}</h3>
+    <div class="space-y-3">
+      <div><label class="text-sm text-gray-600 mb-1 block">频道名称</label><input id="ch-name" type="text" value="${ch?ch.name:''}" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-lake"></div>
+      <div><label class="text-sm text-gray-600 mb-1 block">排序</label><input id="ch-sort" type="number" value="${ch?ch.sort:store.channels.length+1}" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-lake"></div>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button onclick="closeModal()" class="flex-1 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm btn-press">取消</button>
+      <button onclick="saveChannel(${editId||0})" class="flex-1 py-2 bg-lake text-white rounded-lg text-sm btn-press">保存</button>
+    </div>
+  `);
+}
+
+function saveChannel(editId) {
+  const name = $('#ch-name')?.value;
+  const sort = parseInt($('#ch-sort')?.value) || 1;
+  if (!name?.trim()) return;
+  if (editId) { const ch = store.channels.find(c => c.id === editId); if (ch) { ch.name = name; ch.sort = sort; } }
+  else { store.channels.push({ id: nextId(), name, sort, status: 'active' }); }
+  closeModal();
+  renderAdmin();
+}
+
+// ---- Admin: Push ----
+function renderAdminPush() {
+  return `<div class="space-y-4">
+    <h2 class="text-xl font-semibold text-gray-800">通知推送</h2>
+    <div class="grid grid-cols-2 gap-6">
+      <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <h3 class="text-sm font-medium text-gray-800 mb-3">发送推送</h3>
+        <div class="space-y-3">
+          <div><label class="text-sm text-gray-600 mb-1 block">推送范围</label>
+            <select id="push-range" class="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-lake">
+              <option>全部用户</option><option>墙主</option><option>普通用户</option>
+            </select>
+          </div>
+          <div><label class="text-sm text-gray-600 mb-1 block">推送内容</label>
+            <textarea id="push-content" class="w-full h-24 p-3 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:border-lake" placeholder="输入推送内容..."></textarea>
+          </div>
+          <button onclick="sendPush()" class="w-full py-2 bg-lake text-white rounded-lg text-sm font-medium btn-press">发送推送</button>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <h3 class="text-sm font-medium text-gray-800 mb-3">推送记录</h3>
+        <div class="space-y-2">
+          ${store.pushRecords.map(r => `<div class="py-2 border-b border-gray-50 last:border-0">
+            <div class="flex items-center justify-between"><span class="text-xs font-medium text-gray-700">${r.range}</span><span class="text-[10px] text-slate2">${r.createdAt}</span></div>
+            <p class="text-xs text-gray-500 mt-0.5">${r.content}</p>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function sendPush() {
+  const range = $('#push-range')?.value || '全部用户';
+  const content = $('#push-content')?.value;
+  if (!content?.trim()) return;
+  store.pushRecords.unshift({ id: nextId(), range, content, createdAt: new Date().toLocaleDateString('zh-CN'), status: 'sent' });
+  store.notifications.unshift({ id: nextId(), type: 'system', title: '系统通知', content, read: false, createdAt: new Date().toLocaleString('zh-CN') });
+  renderAdmin();
+}
+
+// ---- Admin: Tutorials ----
+function renderAdminTutorials() {
+  return `<div class="space-y-4">
+    <h2 class="text-xl font-semibold text-gray-800">教程管理</h2>
+    <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100 space-y-4">
+      ${store.tutorials.map(t => `<div class="border-b border-gray-100 pb-4 last:border-0">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-medium text-gray-700">${t.title}</span>
+          <span class="text-[10px] text-slate2">更新于 ${t.updatedAt}</span>
+        </div>
+        <textarea onchange="store.tutorials.find(x=>x.id===${t.id}).content=this.value" class="w-full h-32 p-3 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:border-lake">${t.content}</textarea>
+      </div>`).join('')}
+      <button onclick="store.tutorials.push({id:nextId(),title:'新教程',content:'',updatedAt:new Date().toLocaleDateString('zh-CN')});renderAdmin()" class="px-4 py-2 bg-lake text-white rounded-lg text-sm font-medium btn-press shadow-sm">+ 新增教程</button>
+    </div>
+  </div>`;
+}
+
+// ---- Admin: Agreement ----
+function renderAdminAgreement() {
+  return `<div class="space-y-4">
+    <h2 class="text-xl font-semibold text-gray-800">用户协议管理</h2>
+    <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+      <textarea id="agreement-editor" onchange="store.agreement=this.value" class="w-full h-80 p-3 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:border-lake leading-relaxed">${store.agreement}</textarea>
+      <div class="flex justify-end mt-3">
+        <button onclick="showModal('<p class=\\'text-sm text-gray-600 text-center\\'>协议内容已保存</p><button onclick=\\'closeModal()\\' class=\\'mt-4 w-full py-2 bg-lake text-white rounded-lg text-sm btn-press\\'>确定</button>')" class="px-6 py-2 bg-lake text-white rounded-lg text-sm font-medium btn-press shadow-sm">保存</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ==================== INIT ====================
+switchMode('mini');
+</script>
+</body>
+</html>

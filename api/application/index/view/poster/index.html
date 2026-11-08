@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>校园墙海报</title>
+    <style>
+        * {
+            font-size: {$text_font_size};
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            min-height: 100vh;
+            height: auto;
+            /* 微软雅黑字体 */
+            font-family: 'Noto Sans SC', 'Microsoft YaHei', '微软雅黑', 'SimSun', '宋体', sans-serif !important;
+            {$bg_style}
+            color: #333;
+            padding-bottom: 20px;
+            overflow-x: hidden;
+        }
+
+        .wrapper {
+            width: 100%;
+            max-width: 450px;
+            margin: 0 auto;
+            padding: 20px;
+            {$bg_style}
+            background-repeat: repeat-y;
+            background-position: top center;
+            background-size: 100% auto;
+            box-sizing: border-box;
+            min-height: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .date-section {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #current-date {
+            font-size: {$time_font_size};
+            color: #000;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            margin: 0 auto;
+            background-color: rgb(255, 255, 255, 0.6);
+            text-align: center;
+        }
+
+        .tag {
+            font-size: {$tag_font_size};
+            background: #fff;
+            padding: 6px 14px;
+            color: #1976d2;
+            border-radius: 12px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .header-info {
+            display: flex;
+            align-items: center;
+            margin-top: 40px;
+            gap: 10px;
+        }
+
+        /* 全局头像样式，保证所有位置一致 */
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .poster-image img {
+            width: 98%;
+            height: auto;
+            border-radius: 10px;
+            display: block;
+            max-width: none;
+        }
+
+        .wall-owner-reply {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .wall-owner-reply-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-left: 10px;
+        }
+
+        .wall-owner-reply-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .wall-owner-reply-text {
+            flex: 1;
+        }
+
+        .wall-owner-reply-text > div {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        /*墙主回复*/
+        .text-content {
+            padding: 10px 20px;
+            border-radius: 15px;
+            background-color: #fff;
+            font-weight: bold;
+            display: inline-block;
+            text-align: left;
+        }
+
+        /* 微信气泡样式 */
+        .chat-item {
+            display: flex;
+            align-items: flex-start;
+            margin-top: 15px;
+            gap: 10px;
+        }
+
+        .chat-bubble {
+            padding: 10px 15px;
+            background-color: #fff;
+            border-radius: 15px;
+            font-weight: bold;
+            line-height: 1.8;
+            word-break: break-word;
+            max-width: calc(100% - 60px);
+        }
+
+        .chat-bubble img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <!-- 日期时间 -->
+    <div class="date-section">
+        <span id="current-date">{$time}</span>
+    </div>
+
+    <!-- 头像 + 标签（气泡） -->
+
+    <div class="header-info">
+        {if !$info.is_anonymous && !empty($info.user_avatar)}
+            <div class="user-avatar">
+                <img src="{$info.user_avatar}" alt="用户头像">
+            </div>
+        {/if}
+        <span class="tag">#{$info.tag}</span>
+    </div>
+
+    <!-- 标题 -->
+    <div class="chat-item">
+        {if !$info.is_anonymous && !empty($info.user_avatar)}
+            <div class="user-avatar">
+                <img src="{$info.user_avatar}" alt="用户头像">
+            </div>
+        {/if}
+        <div class="chat-bubble">{$info.title}</div>
+    </div>
+
+    <!-- 联系方式 有值显示，无值不显示 -->
+    {if !empty($info.contact)}
+        <div class="chat-item">
+            {if !$info.is_anonymous && !empty($info.user_avatar)}
+                <div class="user-avatar">
+                    <img src="{$info.user_avatar}" alt="用户头像">
+                </div>
+            {/if}
+            <div class="chat-bubble">联系方式：{$info.contact}</div>
+        </div>
+    {/if}
+    {if !empty($info.content)}
+        <div class="chat-item">
+            {if !$info.is_anonymous && !empty($info.user_avatar)}
+                <div class="user-avatar">
+                    <img src="{$info.user_avatar}" alt="用户头像">
+                </div>
+            {/if}
+            <div class="chat-bubble">{$info.content}</div>
+        </div>
+    {/if}
+
+    <!-- 图片集合（如有） -->
+    {if $images}
+    <div class="chat-item">
+        {if !$info.is_anonymous && !empty($info.user_avatar)}
+            <div class="user-avatar">
+                <img src="{$info.user_avatar}" alt="用户头像">
+            </div>
+        {/if}
+        <div class="chat-bubble">
+            {foreach $images as $image}
+                {if !empty($image)}
+                    <img src="{$image}" alt="海报图片">
+                {/if}
+            {/foreach}
+        </div>
+    </div>
+    {/if}
+
+    <!-- 墙主回复 -->
+   {if !empty($info.wall_owner_reply)}
+        <div class="wall-owner-reply">
+            <div class="wall-owner-reply-text">
+                <div style="flex:1">
+                    <div class="text-content">
+                        {$info.wall_owner_reply}
+                    </div>
+                </div>
+            </div>
+            {if !empty($info.wall_owner_avatar)}
+                <div class="wall-owner-reply-avatar">
+                    <img src="{$info.wall_owner_avatar}" alt="墙主头像">
+                </div>
+            {/if}
+        </div>
+    {/if}
+</div>
+</body>
+</html>

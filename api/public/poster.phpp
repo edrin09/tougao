@@ -1,0 +1,291 @@
+<?php
+    // 接收参数
+    $title           = isset($_GET['title']) ? htmlspecialchars($_GET['title']) : '';
+    $content         = isset($_GET['content']) ? htmlspecialchars($_GET['content']) : '';
+    $contactRaw      = isset($_GET['contact']) ? $_GET['contact'] : '';
+    $contactRaw      = is_string($contactRaw) ? trim($contactRaw) : '';
+    $contact         = htmlspecialchars($contactRaw, ENT_QUOTES);
+    $tag             = isset($_GET['tag']) ? htmlspecialchars($_GET['tag']) : '#校园墙';
+    $bgColor         = isset($_GET['bgColor']) ? htmlspecialchars($_GET['bgColor']) : '#f0f8ff';
+    $custom_bg_image = isset($_GET['custom_bg_image']) ? htmlspecialchars($_GET['custom_bg_image']) : '';
+    $wallOwnerAvatar = isset($_GET['wallOwnerAvatar']) ? htmlspecialchars($_GET['wallOwnerAvatar']) : '';
+    $wallOwnerReply  = isset($_GET['wallOwnerReply']) ? htmlspecialchars($_GET['wallOwnerReply']) : '';
+    $isAnonymous     = isset($_GET['isAnonymous']) ? ($_GET['isAnonymous'] === 'true' || $_GET['isAnonymous'] === '1') : false;
+    $userAvatar      = isset($_GET['userAvatar']) ? htmlspecialchars($_GET['userAvatar']) : '';
+
+    // 图片处理
+    $images = isset($_GET['images']) ? explode(',', $_GET['images']) : [];
+    // 去除空白和无效链接
+    $images = array_values(array_filter($images, function($img) {
+        return trim($img) !== '';
+    }));
+
+    // 日期格式化
+    $date = date('Y-m-d H:i:s');
+
+    // 背景样式
+    $bgStyle = ! empty($custom_bg_image) ?
+    "background-image: url('" . $custom_bg_image . "'); background-size: cover; background-position: center;" :
+    "background-color: " . $bgColor . ";";
+?>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>校园墙海报</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            width: 100vw;
+            min-height: 100vh;
+            height: auto;
+            /* 微软雅黑字体 */
+            font-family: 'Noto Sans SC', 'Microsoft YaHei', '微软雅黑', 'SimSun', '宋体', sans-serif !important;
+            <?php echo $bgStyle; ?>
+            color: #333;
+            padding-bottom: 20px;
+            overflow-x: hidden;
+        }
+        .wrapper {
+            width: 100%;
+            max-width: 450px;
+            margin: 0 auto;
+            padding: 20px;
+            <?php echo $bgStyle; ?>
+            background-repeat: repeat-y;
+            background-position: top center;
+            background-size:100% auto;
+            box-sizing: border-box;
+            min-height: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .date-section {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #current-date {
+            font-size: 12px;
+            color: #000;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            margin: 0 auto;
+            background-color: rgb(255, 255, 255, 0.6);
+            text-align: center;
+        }
+        .tag {
+            font-size: 16px;
+            background:#fff;
+            padding: 6px 14px;
+            color: #1976d2;
+            border-radius: 12px;
+            font-weight: bold;
+            margin: 0;
+        }
+        .header-info {
+            display: flex;
+            align-items: center;
+            margin-top: 40px;
+            gap: 10px;
+        }
+        /* 全局头像样式，保证所有位置一致 */
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .title-section {
+            margin-top: 30px;
+        }
+        .title-text {
+            padding: 10px 20px;
+            border-radius: 15px;
+            background-color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            color: #000;
+            display: inline-block;
+        }
+        .content-section {
+            font-size: 16px;
+            line-height: 1.6;
+            padding: 15px 0;
+            white-space: pre-wrap;
+        }
+        .image-container {
+            margin: 15px 0;
+        }
+        .poster-image {
+            width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #fff;
+        }
+        .poster-image img {
+            width: 98%;
+            height: auto;
+            border-radius: 10px;
+            display: block;
+            max-width: none;
+        }
+        .wall-owner-reply {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        .wall-owner-reply-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-left: 10px;
+        }
+        .wall-owner-reply-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .wall-owner-reply-text {
+            flex: 1;
+        }
+        .wall-owner-reply-text>div {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .text-content {
+            padding: 10px 20px;
+            border-radius: 15px;
+            background-color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            display: inline-block;
+            text-align: left;
+        }
+        .anonymous-tag {
+            font-size: 14px;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 5px 10px;
+            border-radius: 10px;
+            color: #666;
+        }
+        /* 微信气泡样式 */
+        .chat-item {
+            display: flex;
+            align-items: flex-start;
+            margin-top: 15px;
+            gap: 10px;
+        }
+        .chat-bubble {
+            padding: 10px 15px;
+            background-color: #fff;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            line-height: 1.6;
+            word-break: break-word;
+            max-width: calc(100% - 60px);
+        }
+        .chat-bubble img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- 日期时间 -->
+        <div class="date-section">
+            <span id="current-date"><?php echo $date; ?></span>
+        </div>
+
+        <!-- 头像 + 标签（气泡） -->
+        <div class="header-info">
+            <?php if (!$isAnonymous && !empty($userAvatar)): ?>
+                <div class="user-avatar">
+                    <img src="<?php echo $userAvatar; ?>" alt="用户头像">
+                </div>
+            <?php endif; ?>
+            <span class="tag">#<?php echo $tag; ?></span>
+        </div>
+
+        <!-- 标题 -->
+        <div class="chat-item">
+            <?php if (!$isAnonymous && !empty($userAvatar)): ?>
+                <div class="user-avatar">
+                    <img src="<?php echo $userAvatar; ?>" alt="用户头像">
+                </div>
+            <?php endif; ?>
+            <div class="chat-bubble"><?php echo $content; ?></div>
+        </div>
+
+        <!-- 联系方式 有值显示，无值不显示 -->
+        <?php if (! empty($contact)): ?>
+        <div class="chat-item">
+            <?php if (!$isAnonymous && !empty($userAvatar)): ?>
+                <div class="user-avatar">
+                    <img src="<?php echo $userAvatar; ?>" alt="用户头像">
+                </div>
+            <?php endif; ?>
+            <div class="chat-bubble">联系方式：<?php echo $contact; ?></div>
+        </div>
+        <?php endif; ?>
+        
+        <!-- 图片集合（如有） -->
+        <?php if (!empty($images)): ?>
+        <div class="chat-item">
+            <?php if (!$isAnonymous && !empty($userAvatar)): ?>
+                <div class="user-avatar">
+                    <img src="<?php echo $userAvatar; ?>" alt="用户头像">
+                </div>
+            <?php endif; ?>
+            <div class="chat-bubble">
+                <?php foreach ($images as $image): ?>
+                    <?php if (!empty($image)): ?>
+                        <img src="<?php echo htmlspecialchars($image); ?>" alt="海报图片">
+                <?php endif; ?>
+<?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+            <!-- 墙主回复 -->
+            <?php if (! empty($wallOwnerReply)): ?>
+            <div class="wall-owner-reply">
+                <div class="wall-owner-reply-text">
+                    <div style="flex:1">
+                        <div class="text-content">
+                            <?php echo $wallOwnerReply; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php if (! empty($wallOwnerAvatar)): ?>
+                <div class="wall-owner-reply-avatar">
+                    <img src="<?php echo htmlspecialchars($wallOwnerAvatar); ?>" alt="墙主头像">
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+    </div>
+</body>
+</html>
