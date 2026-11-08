@@ -10,17 +10,28 @@ class WechatOfficialService
 {
     protected $app;
 
+    /**
+     * 凭据缺失（配置为空）时为 false。此时模板消息直接跳过，不影响投稿、审核等主流程。
+     * @var bool
+     */
+    protected $configured = false;
+
     public function __construct()
     {
         // 公众号凭据统一放在 config/wechat.php 的 official_account 里，不写死进代码
         $config = config('wechat.official_account') ?: [];
 
         if (empty($config['app_id']) || empty($config['secret'])) {
-            throw new Exception(
-                '公众号凭据未配置：请在 config/wechat.php 的 official_account 中填写 app_id / secret / token'
-            );
+            // 不抛异常：调用方多为「投稿成功」这类主流程，不能因为没配公众号就整单失败
+            try {
+                Log::warning('公众号凭据未配置，模板消息已跳过：请在 config/wechat.php 的 official_account 中填写 app_id / secret / token');
+            } catch (Exception $e) {
+                // 日志不可用时静默跳过
+            }
+            return;
         }
 
+        $this->configured = true;
         $this->app = Factory::officialAccount([
             'app_id' => $config['app_id'],
             'secret' => $config['secret'],
@@ -32,11 +43,16 @@ class WechatOfficialService
 
 
     /*
-     * 获取应用实例
+     * 获取应用实例（服务器地址校验等显式入口用，缺配置时明确报错）
      * @return \EasyWeChat\OfficialAccount\Application
      */
     public function getApps()
     {
+        if (!$this->configured) {
+            throw new Exception(
+                '公众号凭据未配置：请在 config/wechat.php 的 official_account 中填写 app_id / secret / token'
+            );
+        }
         return $this->app;
     }
 
@@ -73,6 +89,11 @@ class WechatOfficialService
      */
     public function sendTemplateMessage($openid, $template_id, $data, $miniprogram = [], $url = '')
     {
+        if (!$this->configured) {
+            // 没配公众号就静默跳过，不打断业务
+            return false;
+        }
+
         $result = $this->app->template_message->send([
             'touser' => $openid,
             'template_id' => $template_id,
